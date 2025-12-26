@@ -1,4 +1,4 @@
-# 🕹️ Arkanoid Pro Mobile (SNES Revival)
+# 🕹️ Arkanoid Pro Mobile
 
 ## 🚀 核心機制
 - 智慧型手機上採左/右半屏觸控。
