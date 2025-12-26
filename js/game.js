@@ -1,4 +1,3 @@
-```javascript
 import InputHandler from './input.js';
 import { Paddle, Ball, Brick } from './entities.js';
 import { generateLevel } from './levels.js';
@@ -29,9 +28,9 @@ export default class Game {
 
         // Resume audio context on first click if needed
         document.addEventListener('click', () => {
-             if(this.audio.ctx.state === 'suspended') {
-                 this.audio.ctx.resume();
-             }
+            if (this.audio.ctx.state === 'suspended') {
+                this.audio.ctx.resume();
+            }
         }, { once: true });
     }
 
@@ -130,7 +129,7 @@ export default class Game {
         // Ball class handles bounce. Let's make ball return a status or check here?
         // Basic wall bounce sound manually:
         if (this.ball.position.y <= 0) {
-             this.audio.play('wall');
+            this.audio.play('wall');
         }
 
         // Bricks
@@ -214,9 +213,9 @@ export default class Game {
         const s = document.getElementById('score-val');
         const l = document.getElementById('lives-val');
         const v = document.getElementById('level-val');
-        if(s) s.innerText = this.score;
-        if(l) l.innerText = this.lives;
-        if(v) v.innerText = this.currentLevel;
+        if (s) s.innerText = this.score;
+        if (l) l.innerText = this.lives;
+        if (v) v.innerText = this.currentLevel;
     }
 
     draw() {
@@ -238,14 +237,14 @@ export default class Game {
 
             this.ctx.fillStyle = '#fff';
             this.ctx.font = '40px "Press Start 2P"';
-            this.ctx.fillText("ARKANOID", this.gameWidth / 2, this.gameHeight / 2 - 40);
+            this.ctx.fillText("ARKANDOID", this.gameWidth / 2, this.gameHeight / 2 - 40);
             this.ctx.font = '20px "Press Start 2P"';
-            this.ctx.fillText("PRO MOBILE", this.gameWidth / 2, this.gameHeight / 2);
+            this.ctx.fillText("OSHUKEZU VIBE CODING", this.gameWidth / 2, this.gameHeight / 2);
 
             this.ctx.font = '14px "Press Start 2P"';
             // Pulsate text effect
             const alpha = Math.abs(Math.sin(Date.now() / 500));
-            this.ctx.fillStyle = `rgba(255, 255, 255, ${ alpha })`;
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
             this.ctx.fillText("TAP 'A' BUTTON TO START", this.gameWidth / 2, this.gameHeight / 2 + 60);
         }
         else if (this.gameState === 'GAMEOVER') {
@@ -260,7 +259,7 @@ export default class Game {
             this.ctx.fillText("FINAL SCORE: " + this.score, this.gameWidth / 2, this.gameHeight / 2 + 40);
 
             const alpha = Math.abs(Math.sin(Date.now() / 500));
-            this.ctx.fillStyle = `rgba(255, 255, 255, ${ alpha })`;
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
             this.ctx.fillText("PRESS A TO RESTART", this.gameWidth / 2, this.gameHeight / 2 + 80);
         }
     }
