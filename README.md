@@ -1,4 +1,5 @@
-🕹️ Arkanoid Pro Mobile (SNES Revival)
+# 🕹️ Arkanoid Pro Mobile (SNES Revival)
+
 這是一個針對智慧型手機優化的經典「打磚塊」重製版。保留了 SNES 的像素美學，並導入現代隨機關卡生成算法與豐富的道具機制。
 
 🚀 核心機制
