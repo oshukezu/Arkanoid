@@ -11,14 +11,26 @@
 </head>
 
 <body>
-    <div id="game-container">
-        <!-- Target Resolution: 540x960 (9:16) -->
-        <canvas id="gameCanvas" width="540" height="960"></canvas>
+    <div id="main-wrapper">
+        <div id="game-area">
+            <canvas id="gameCanvas" width="540" height="960"></canvas>
+            <div id="ui-overlay">
+                <div id="score">SCORE: <span id="score-val">0</span></div>
+                <div id="lives">LIVES: <span id="lives-val">5</span></div>
+                <div id="level">LEVEL: <span id="level-val">1</span></div>
+            </div>
+        </div>
 
-        <div id="ui-overlay">
-            <div id="score">SCORE: <span id="score-val">0</span></div>
-            <div id="lives">LIVES: <span id="lives-val">5</span></div>
-            <div id="level">LEVEL: <span id="level-val">1</span></div>
+        <div id="controls-area">
+            <div class="control-group left">
+                <button id="btn-left" class="big-btn">◀</button>
+            </div>
+            <div class="control-group center">
+                <button id="btn-a" class="big-btn action-btn">A</button>
+            </div>
+            <div class="control-group right">
+                <button id="btn-right" class="big-btn">▶</button>
+            </div>
         </div>
     </div>
 

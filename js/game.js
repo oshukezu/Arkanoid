@@ -1,6 +1,8 @@
+```javascript
 import InputHandler from './input.js';
 import { Paddle, Ball, Brick } from './entities.js';
 import { generateLevel } from './levels.js';
+import { SoundManager } from './audio.js';
 
 export default class Game {
     constructor(canvas) {
@@ -16,6 +18,7 @@ export default class Game {
         this.paddle = new Paddle(this.gameWidth, this.gameHeight);
         this.ball = new Ball(this.gameWidth, this.gameHeight, this.paddle);
         this.input = new InputHandler();
+        this.audio = new SoundManager();
 
         this.bricks = [];
         this.currentLevel = 0;
@@ -23,6 +26,13 @@ export default class Game {
         this.score = 0;
 
         this.updateUI();
+
+        // Resume audio context on first click if needed
+        document.addEventListener('click', () => {
+             if(this.audio.ctx.state === 'suspended') {
+                 this.audio.ctx.resume();
+             }
+        }, { once: true });
     }
 
     start() {
@@ -42,7 +52,7 @@ export default class Game {
         this.score = 0;
         this.lives = 5;
         this.loadLevel(1);
-        this.gameState = 'PLAYING';
+        this.gameState = 'MENU'; // User request: "Game over的時候應該回到初始畫面"
         this.updateUI();
     }
 
@@ -56,6 +66,7 @@ export default class Game {
         if (this.gameState === 'MENU') {
             if (this.input.keys.action) {
                 this.gameState = 'PLAYING';
+                this.audio.play('win'); // Start sound
             }
         } else if (this.gameState === 'PLAYING') {
             this.paddle.update(this.input);
@@ -112,6 +123,14 @@ export default class Game {
 
             this.ball.speed.x = speed * Math.sin(angle);
             this.ball.speed.y = -speed * Math.cos(angle);
+            this.audio.play('hit');
+        }
+
+        // Floor Check (handled in checkGameOver) but wall bounce should play sound? 
+        // Ball class handles bounce. Let's make ball return a status or check here?
+        // Basic wall bounce sound manually:
+        if (this.ball.position.y <= 0) {
+             this.audio.play('wall');
         }
 
         // Bricks
@@ -123,14 +142,21 @@ export default class Game {
 
                     const destroyed = b.hit();
                     if (destroyed) {
+                        this.audio.play('brick');
                         if (b.type === 3) {
                             this.score += 500; // Item bonus
+                            this.audio.play('item');
+                            // Simple effect: Expand paddle briefly?
+                            // Implementing item drop is complex. 
+                            // For "random item", maybe instant effect + text?
                         } else {
                             this.score += 100 * b.type;
+                            // Hard brick destroy sound
                         }
                     } else {
                         // Hard brick hit but not destroyed
                         this.score += 50;
+                        this.audio.play('hit');
                     }
 
                     // Speed up
@@ -165,6 +191,7 @@ export default class Game {
         if (this.ball.position.y > this.gameHeight) {
             this.lives--;
             this.updateUI();
+            this.audio.play('die'); // Sound
             if (this.lives > 0) {
                 this.ball.reset();
             } else {
@@ -174,18 +201,22 @@ export default class Game {
     }
 
     checkLevelComplete() {
-        // Check if all bricks are status 0
+        // Check if all bricks (except unbreakable if any, but we don't have them yet) are gone
         const activeBricks = this.bricks.filter(b => b.status === 1);
         if (activeBricks.length === 0) {
             this.currentLevel++;
             this.loadLevel(this.currentLevel);
+            this.audio.play('win'); // Level up sound
         }
     }
 
     updateUI() {
-        document.getElementById('score-val').innerText = this.score;
-        document.getElementById('lives-val').innerText = this.lives;
-        document.getElementById('level-val').innerText = this.currentLevel + 1;
+        const s = document.getElementById('score-val');
+        const l = document.getElementById('lives-val');
+        const v = document.getElementById('level-val');
+        if(s) s.innerText = this.score;
+        if(l) l.innerText = this.lives;
+        if(v) v.innerText = this.currentLevel;
     }
 
     draw() {
@@ -209,13 +240,13 @@ export default class Game {
             this.ctx.font = '40px "Press Start 2P"';
             this.ctx.fillText("ARKANOID", this.gameWidth / 2, this.gameHeight / 2 - 40);
             this.ctx.font = '20px "Press Start 2P"';
-            this.ctx.fillText("SNES EDITION", this.gameWidth / 2, this.gameHeight / 2);
+            this.ctx.fillText("PRO MOBILE", this.gameWidth / 2, this.gameHeight / 2);
 
             this.ctx.font = '14px "Press Start 2P"';
             // Pulsate text effect
             const alpha = Math.abs(Math.sin(Date.now() / 500));
-            this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-            this.ctx.fillText("PRESS A / SPACE TO START", this.gameWidth / 2, this.gameHeight / 2 + 60);
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${ alpha })`;
+            this.ctx.fillText("TAP 'A' BUTTON TO START", this.gameWidth / 2, this.gameHeight / 2 + 60);
         }
         else if (this.gameState === 'GAMEOVER') {
             this.ctx.fillStyle = 'rgba(0,0,0,0.7)';
@@ -229,7 +260,7 @@ export default class Game {
             this.ctx.fillText("FINAL SCORE: " + this.score, this.gameWidth / 2, this.gameHeight / 2 + 40);
 
             const alpha = Math.abs(Math.sin(Date.now() / 500));
-            this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${ alpha })`;
             this.ctx.fillText("PRESS A TO RESTART", this.gameWidth / 2, this.gameHeight / 2 + 80);
         }
     }
