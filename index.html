@@ -4,12 +4,15 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ARKANDOID OSHUKEZU VIBE CODING</title>
+    <link rel="icon" type="image/png" href="arkanoid.png">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
         body {
             margin: 0;
             overflow: hidden;
             background: #000;
-            font-family: sans-serif;
+            font-family: 'Press Start 2P', cursive;
         }
 
         #game-container {
@@ -18,12 +21,13 @@
             position: relative;
         }
 
-        /* Include background image but fallback to black if missing */
+        /* Solid black background, NO image */
         canvas {
             width: 100%;
             height: 100%;
-            background: #000 url('arkanoid.png') center/cover;
+            background: #000;
             display: block;
+            image-rendering: pixelated;
         }
 
         #ui-panel {
@@ -32,33 +36,48 @@
             justify-content: space-around;
             align-items: center;
             background: #222;
+            border-top: 4px solid #fff;
         }
 
+        /* 8-bit Button Styles */
         .btn {
             width: 28%;
             height: 60%;
             background: #444;
             color: white;
-            border: 3px solid #fff;
-            border-radius: 10px;
+            border: 4px solid #fff;
+            border-radius: 4px;
+            /* Boxy */
+            font-family: 'Press Start 2P', cursive;
             font-size: 2rem;
             user-select: none;
             -webkit-user-select: none;
             touch-action: manipulation;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 0 #000;
         }
 
         .btn:active {
-            transform: scale(0.95);
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #000;
             background: #666;
         }
 
         .btn-a {
-            background: #d00;
+            background: #b71c1c;
+            border-radius: 50%;
+            /* Round for Action button is classic */
+            width: auto;
+            aspect-ratio: 1;
+            height: 70%;
+            font-size: 2.5rem;
         }
 
         .btn-a:active {
-            background: #f00;
+            background: #d32f2f;
         }
 
         #game-over {
@@ -68,31 +87,45 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             color: #fff;
             text-align: center;
             justify-content: center;
             align-items: center;
             flex-direction: column;
             z-index: 100;
+            font-family: 'Press Start 2P', cursive;
         }
 
         #game-over h1 {
-            font-size: 3rem;
+            font-size: 2rem;
             margin-bottom: 20px;
             color: #f00;
-            text-shadow: 2px 2px #fff;
+            text-shadow: 4px 4px #000;
+            line-height: 1.5;
+        }
+
+        #game-over p {
+            font-size: 1rem;
+            margin-bottom: 30px;
+            letter-spacing: 2px;
         }
 
         #game-over button {
-            font-size: 1.5rem;
-            padding: 10px 30px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            padding: 15px 20px;
             cursor: pointer;
             background: #fff;
             color: #000;
-            border: none;
-            border-radius: 5px;
+            border: 4px solid #888;
+            border-radius: 0;
             margin-top: 20px;
+        }
+
+        #game-over button:active {
+            background: #ccc;
+            border-color: #fff;
         }
 
         /* Stats overlay */
@@ -101,11 +134,12 @@
             top: 10px;
             left: 10px;
             color: #fff;
-            font-family: monospace;
-            font-size: 16px;
-            text-shadow: 1px 1px 0 #000;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            text-shadow: 2px 2px 0 #000;
             pointer-events: none;
             z-index: 10;
+            line-height: 1.8;
         }
     </style>
 </head>
@@ -120,7 +154,7 @@
         </div>
         <div id="game-over">
             <h1>GAME OVER</h1>
-            <p>Score: <span id="final-score">0</span></p>
+            <p>SCORE: <span id="final-score">0</span></p>
             <button onclick="location.reload()">RESTART</button>
         </div>
     </div>
