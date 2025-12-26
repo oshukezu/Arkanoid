@@ -4,11 +4,20 @@ window.addEventListener('load', () => {
     const canvas = document.getElementById('gameCanvas');
     const container = document.getElementById('game-area');
 
-    // Initial sizing
-    canvas.width = container.clientWidth;
-    canvas.height = container.clientHeight;
+    // Initial sizing with fallback
+    let w = container.clientWidth;
+    let h = container.clientHeight;
 
-    const game = new Game(canvas, canvas.width, canvas.height);
+    // Fallback if layout not ready
+    if (!w || !h) {
+        w = window.innerWidth;
+        h = window.innerHeight * 0.7; // Top 70%
+    }
+
+    canvas.width = w;
+    canvas.height = h;
+
+    const game = new Game(canvas, w, h);
     game.start();
 
     // Responsive resize

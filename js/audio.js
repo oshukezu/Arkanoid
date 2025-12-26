@@ -1,7 +1,12 @@
 export class SoundManager {
     constructor() {
-        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
         this.enabled = true;
+        try {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            console.warn('AudioContext not supported or failed:', e);
+            this.enabled = false;
+        }
     }
 
     play(type) {

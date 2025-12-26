@@ -323,12 +323,12 @@ export default class Game {
             this.ctx.fillRect(0, 0, this.gameWidth, this.gameHeight);
 
             this.ctx.fillStyle = '#fff';
-            this.ctx.font = '40px "Press Start 2P"';
+            this.ctx.font = '40px "Press Start 2P", monospace, sans-serif';
             this.ctx.fillText("ARKANDOID", this.gameWidth / 2, this.gameHeight / 2 - 40);
-            this.ctx.font = '20px "Press Start 2P"';
+            this.ctx.font = '20px "Press Start 2P", monospace, sans-serif';
             this.ctx.fillText("OSHUKEZU VIBE CODING", this.gameWidth / 2, this.gameHeight / 2);
 
-            this.ctx.font = '14px "Press Start 2P"';
+            this.ctx.font = '14px "Press Start 2P", monospace, sans-serif';
             const alpha = Math.abs(Math.sin(Date.now() / 500));
             this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
             this.ctx.fillText("TAP 'A' BUTTON TO START", this.gameWidth / 2, this.gameHeight / 2 + 60);
@@ -337,11 +337,11 @@ export default class Game {
             this.ctx.fillStyle = 'rgba(0,0,0,0.7)';
             this.ctx.fillRect(0, 0, this.gameWidth, this.gameHeight);
             this.ctx.fillStyle = '#ff0000';
-            this.ctx.font = '30px "Press Start 2P"';
+            this.ctx.font = '30px "Press Start 2P", monospace, sans-serif';
             this.ctx.fillText("GAME OVER", this.gameWidth / 2, this.gameHeight / 2);
 
             this.ctx.fillStyle = '#fff';
-            this.ctx.font = '16px "Press Start 2P"';
+            this.ctx.font = '16px "Press Start 2P", monospace, sans-serif';
             this.ctx.fillText("FINAL SCORE: " + this.score, this.gameWidth / 2, this.gameHeight / 2 + 40);
 
             const alpha = Math.abs(Math.sin(Date.now() / 500));
