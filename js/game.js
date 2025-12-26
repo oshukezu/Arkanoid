@@ -274,5 +274,34 @@ export default class Game {
         this.paddle.draw(this.ctx);
         this.balls.forEach(b => b.draw(this.ctx));
         this.bricks.forEach(b => b.draw(this.ctx));
+
+        if (this.state === 'MENU') {
+            // Darken background
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            this.ctx.fillRect(0, 0, this.width, this.height);
+
+            this.ctx.fillStyle = '#fff';
+            this.ctx.textAlign = 'center';
+            this.ctx.shadowColor = '#000';
+            this.ctx.shadowOffsetX = 4;
+            this.ctx.shadowOffsetY = 4;
+
+            // Title
+            this.ctx.font = '40px "Press Start 2P"';
+            this.ctx.fillText("ARKANDOID", this.width / 2, this.height / 2 - 50);
+
+            // Subtitle
+            this.ctx.font = '16px "Press Start 2P"';
+            this.ctx.fillText("OSHUKEZU VIBE EDITION", this.width / 2, this.height / 2);
+
+            // Prompt
+            const alpha = Math.abs(Math.sin(Date.now() / 500));
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            this.ctx.fillText("PRESS A TO START", this.width / 2, this.height / 2 + 60);
+
+            // Reset shadow
+            this.ctx.shadowOffsetX = 0;
+            this.ctx.shadowOffsetY = 0;
+        }
     }
 }
