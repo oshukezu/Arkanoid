@@ -2,14 +2,14 @@ export class Paddle {
     constructor(gameWidth, gameHeight) {
         this.gameWidth = gameWidth;
         this.gameHeight = gameHeight;
-        this.width = 80;
-        this.height = 12;
+        this.width = 100; // Wider relative to 540 (approx 1/5th screen)
+        this.height = 16;
 
         this.x = gameWidth / 2 - this.width / 2;
-        this.y = gameHeight - 30;
+        this.y = gameHeight - 100; // Higher up for thumb space
 
         this.speed = 0;
-        this.maxSpeed = 8;
+        this.maxSpeed = 10;
     }
 
     update(input) {
@@ -54,7 +54,7 @@ export class Ball {
         this.gameHeight = gameHeight;
         this.paddle = paddle;
 
-        this.size = 8; // Size of the ball (diameter or box size)
+        this.size = 12; // Larger ball for mobile
 
         this.reset();
     }
@@ -63,8 +63,8 @@ export class Ball {
         this.speed = { x: 0, y: 0 };
         this.position = { x: 0, y: 0 };
         this.sticky = true;
-        this.initialSpeed = 6; // Base speed
-        this.speedMultiplier = 1.0;
+        this.initialSpeed = 8; // Faster base speed for vertical gameplay
+        this.maxBallSpeed = this.initialSpeed * 2.5;
 
         // Initial position relative to paddle
         this.updateStickyPosition();
@@ -81,17 +81,18 @@ export class Ball {
 
             if (input.keys.action) {
                 this.sticky = false;
-                // Launch ball!
-                // Randomize slightly between -1 and 1 for X to make it interesting
-                // Or standard -speed, -speed? stick to classic:
-                // usually shoots up-right or up-left depending on input, or just straight up-ish.
-                // Let's go with a fixed upward angle but allow paddle momentum to influence? 
-                // For SNES Arkanoid, it usually launches at a fixed angle.
-
                 this.speed.y = -this.initialSpeed;
-                this.speed.x = this.initialSpeed * (Math.random() > 0.5 ? 1 : -1);
+                this.speed.x = this.initialSpeed * (Math.random() > 0.5 ? 0.5 : -0.5); // Less horizontal angle initially
             }
         } else {
+            // Cap speed
+            let currentSpeed = Math.sqrt(this.speed.x ** 2 + this.speed.y ** 2);
+            if (currentSpeed > this.maxBallSpeed) {
+                let ratio = this.maxBallSpeed / currentSpeed;
+                this.speed.x *= ratio;
+                this.speed.y *= ratio;
+            }
+
             this.position.x += this.speed.x;
             this.position.y += this.speed.y;
 
@@ -131,31 +132,46 @@ export class Ball {
 }
 
 export class Brick {
-    constructor(x, y, width, height, colorCode) {
+    constructor(x, y, width, height, type) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
+        this.type = type; // 1=Normal, 2=Hard, 3=Item
         this.status = 1; // 1 = active, 0 = broken
 
-        // Map colorCode or just randomize/fixed based on row in Game class? 
-        // For simplicity let's handle color in draw or pass it in.
-        this.color = this.getColor(colorCode);
+        if (this.type === 2) {
+            this.hp = 2;
+            this.color = '#777'; // Silver for hard
+        } else if (this.type === 3) {
+            this.hp = 1;
+            this.color = '#ffd700'; // Gold for item
+        } else {
+            this.hp = 1;
+            this.color = this.getRandomColor();
+        }
     }
 
-    getColor(code) {
-        // SNES palette
-        const colors = [
-            '#c0c0c0', // 0 (actually empty usually, but if code passed... )
-            '#d32f2f', // Red
-            '#f57c00', // Orange
-            '#fbc02d', // Yellow
-            '#388e3c', // Green
-            '#1976d2', // Blue
-            '#7b1fa2'  // Purple
-        ];
-        // Reuse colors if code > length
-        return colors[code % colors.length] || '#fff';
+    getRandomColor() {
+        const colors = ['#d32f2f', '#f57c00', '#fbc02d', '#388e3c', '#1976d2', '#7b1fa2'];
+        return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    hit() {
+        if (this.type === 2) {
+            this.hp--;
+            if (this.hp <= 0) {
+                this.status = 0;
+                return true; // Destroyed
+            } else {
+                // Blink or change color logic?
+                this.color = '#aaa'; // Damaged silver
+                return false; // Not destroyed
+            }
+        } else {
+            this.status = 0;
+            return true;
+        }
     }
 
     draw(ctx) {
@@ -163,14 +179,20 @@ export class Brick {
             ctx.fillStyle = this.color;
             ctx.fillRect(this.x, this.y, this.width, this.height);
 
-            // Bevel effect / shadow
-            ctx.fillStyle = 'rgba(0,0,0,0.2)';
-            ctx.fillRect(this.x, this.y + this.height - 2, this.width, 2);
-            ctx.fillRect(this.x + this.width - 2, this.y, 2, this.height);
+            // Bevel
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.fillRect(this.x, this.y, this.width, 4);
+            ctx.fillRect(this.x, this.y, 4, this.height);
 
-            ctx.fillStyle = 'rgba(255,255,255,0.2)';
-            ctx.fillRect(this.x, this.y, this.width, 2);
-            ctx.fillRect(this.x, this.y, 2, this.height);
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillRect(this.x, this.y + this.height - 4, this.width, 4);
+            ctx.fillRect(this.x + this.width - 4, this.y, 4, this.height);
+
+            if (this.type === 2 && this.hp === 2) {
+                // Hard visual indicator
+                ctx.fillStyle = '#aaa';
+                ctx.fillRect(this.x + 10, this.y + 6, this.width - 20, 4);
+            }
         }
     }
 }

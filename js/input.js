@@ -43,23 +43,53 @@ export default class InputHandler {
     }
 
     setupTouchListeners() {
-        const btnLeft = document.getElementById('btn-left');
-        const btnRight = document.getElementById('btn-right');
-        const btnA = document.getElementById('btn-a');
+        // Zone based touch:
+        // Left < 40% width
+        // Right > 60% width
+        // Center (40-60%) = Action
 
-        // Helper for touch events
-        const addTouch = (elem, key) => {
-            if (!elem) return;
-            elem.addEventListener('touchstart', (e) => { e.preventDefault(); this.keys[key] = true; });
-            elem.addEventListener('touchend', (e) => { e.preventDefault(); this.keys[key] = false; });
-            // Mouse events for testing on desktop
-            elem.addEventListener('mousedown', (e) => { e.preventDefault(); this.keys[key] = true; });
-            elem.addEventListener('mouseup', (e) => { e.preventDefault(); this.keys[key] = false; });
-            elem.addEventListener('mouseleave', (e) => { e.preventDefault(); this.keys[key] = false; });
+        const handleTouch = (e) => {
+            e.preventDefault();
+            // Reset keys first to handle multi-touch accurately or simple single touch logic
+            // For simplicity in this game, we might prioritize one. 
+            // But let's support multi-touch for holding move + tapping action?
+            // Actually, usually users use two thumbs.
+
+            this.keys.left = false;
+            this.keys.right = false;
+            this.keys.action = false;
+
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                const width = window.innerWidth;
+                const x = touch.clientX;
+                const pct = x / width;
+
+                if (pct < 0.4) {
+                    this.keys.left = true;
+                } else if (pct > 0.6) {
+                    this.keys.right = true;
+                } else {
+                    this.keys.action = true;
+                }
+            }
         };
 
-        addTouch(btnLeft, 'left');
-        addTouch(btnRight, 'right');
-        addTouch(btnA, 'action');
+        const resetKeys = (e) => {
+            e.preventDefault();
+            // If all fingers lifted, reset. 
+            // If some lifted, re-evaluate remaining touches?
+            if (e.touches.length === 0) {
+                this.keys.left = false;
+                this.keys.right = false;
+                this.keys.action = false;
+            } else {
+                handleTouch(e);
+            }
+        };
+
+        document.addEventListener('touchstart', handleTouch, { passive: false });
+        document.addEventListener('touchmove', handleTouch, { passive: false });
+        document.addEventListener('touchend', resetKeys, { passive: false });
     }
 }

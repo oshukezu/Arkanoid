@@ -1,15 +1,18 @@
 import InputHandler from './input.js';
 import { Paddle, Ball, Brick } from './entities.js';
-import { levels } from './levels.js';
+import { generateLevel } from './levels.js';
 
 export default class Game {
     constructor(canvas) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
-        this.gameWidth = canvas.width;
-        this.gameHeight = canvas.height;
+        // Use internal resolution
+        this.gameWidth = 540;
+        this.gameHeight = 960;
 
-        this.gameState = 'MENU'; // MENU, PLAYING, GAMEOVER, LEVEL_TRANSITION
+        // Scale canvas CSS if needed via style (handled by CSS, but internal logic stays 540x960)
+
+        this.gameState = 'MENU';
         this.paddle = new Paddle(this.gameWidth, this.gameHeight);
         this.ball = new Ball(this.gameWidth, this.gameHeight, this.paddle);
         this.input = new InputHandler();
@@ -24,7 +27,7 @@ export default class Game {
 
     start() {
         // Initialize game resources but wait in MENU
-        this.currentLevel = 0;
+        this.currentLevel = 1; // Start at 1
         this.score = 0;
         this.lives = 5;
         this.loadLevel(this.currentLevel);
@@ -35,10 +38,10 @@ export default class Game {
     }
 
     restartGame() {
-        this.currentLevel = 0;
+        this.currentLevel = 1;
         this.score = 0;
         this.lives = 5;
-        this.loadLevel(0);
+        this.loadLevel(1);
         this.gameState = 'PLAYING';
         this.updateUI();
     }
@@ -68,35 +71,28 @@ export default class Game {
     }
 
     loadLevel(levelIndex) {
-        if (levelIndex >= levels.length) {
-            // Victory or Loop?
-            alert("YOU WIN! Restarting...");
-            this.currentLevel = 0;
-        }
-
-        const levelData = levels[levelIndex];
+        const levelData = generateLevel(levelIndex);
         this.bricks = [];
 
-        // Calculate brick dimensions
-        // Grid is usually 10-13 columns.
         const rows = levelData.length;
-        const cols = levelData[0].length;
-        const padding = 2;
-        const offsetTop = 40;
-        const offsetLeft = 11; // Center it a bit better? 512 width
-        // 512 / 10 = 51.2
-        const brickWidth = 48;
-        const brickHeight = 16;
+        const cols = levelData[0].length; // Should be 8
+        const padding = 4;
+        const offsetTop = 150;
+
+        // 540 width. 8 cols. 
+        // 540 - (padding * 9) / 8? 
+        // Let's fix brick width: (540 - 20 padding total) / 8 = 65
+        const brickWidth = 64;
+        const brickHeight = 24;
+        const offsetLeft = (this.gameWidth - (cols * (brickWidth + padding))) / 2 + padding / 2;
 
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
-                if (levelData[r][c] === 1) {
-                    // We can map numbers to colors if we want: levelData[r][c]
+                const type = levelData[r][c];
+                if (type !== 0) {
                     let x = c * (brickWidth + padding) + offsetLeft;
                     let y = r * (brickHeight + padding) + offsetTop;
-                    // Color based on row or simply red/blue alternating
-                    // Let's pass (r+1) as colorCode to get varied colors
-                    this.bricks.push(new Brick(x, y, brickWidth, brickHeight, r + 1));
+                    this.bricks.push(new Brick(x, y, brickWidth, brickHeight, type));
                 }
             }
         }
@@ -106,36 +102,38 @@ export default class Game {
     }
 
     checkCollisions() {
-        // Ball with Paddle
+        // Paddle
         if (this.detectCollision(this.ball, this.paddle)) {
             let collidePoint = this.ball.position.x - (this.paddle.x + this.paddle.width / 2);
-            // Normalize
             collidePoint = collidePoint / (this.paddle.width / 2);
-
-            // Calculate angle: -60deg to 60deg (PI/3)
             let angle = collidePoint * (Math.PI / 3);
-
-            // Determine speed magnitude
-            let speed = Math.sqrt(this.ball.speed.x * this.ball.speed.x + this.ball.speed.y * this.ball.speed.y);
-            // Increase speed slightly on paddle bounce too? Or just bricks? 
-            // User requirement: "球速會依照每次反彈速度逐漸增加1%" - "反彈" usually means any bounce?
-            // Let's apply it on paddle bounce to keep it dynamic, AND bricks.
+            let speed = Math.sqrt(this.ball.speed.x ** 2 + this.ball.speed.y ** 2);
             speed = speed * 1.01;
 
             this.ball.speed.x = speed * Math.sin(angle);
             this.ball.speed.y = -speed * Math.cos(angle);
         }
 
-        // Ball with Bricks
+        // Bricks
         for (let i = 0; i < this.bricks.length; i++) {
             let b = this.bricks[i];
             if (b.status === 1) {
                 if (this.detectCollision(this.ball, b)) {
-                    this.ball.speed.y = -this.ball.speed.y; // Simple bounce
-                    b.status = 0;
-                    this.score += 10;
+                    this.ball.speed.y = -this.ball.speed.y;
 
-                    // Specific requirement: Speed increases by 1% on bounce
+                    const destroyed = b.hit();
+                    if (destroyed) {
+                        if (b.type === 3) {
+                            this.score += 500; // Item bonus
+                        } else {
+                            this.score += 100 * b.type;
+                        }
+                    } else {
+                        // Hard brick hit but not destroyed
+                        this.score += 50;
+                    }
+
+                    // Speed up
                     this.ball.speed.x *= 1.01;
                     this.ball.speed.y *= 1.01;
 

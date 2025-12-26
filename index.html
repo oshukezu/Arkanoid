@@ -1,16 +1,20 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SNE-kanoid</title>
-    <link rel="apple-touch-icon" href="https://www.flaticon.com/free-icon/arkanoid_1890702?term=arkanoid&related_id=1890702">
+    <link rel="icon" type="image/png" href="arkanoid.png">
+    <link rel="apple-touch-icon" href="arkanoid.png">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div id="game-container">
-        <canvas id="gameCanvas" width="512" height="448"></canvas> <!-- SNES resolution * 2 -->
-        
+        <!-- Target Resolution: 540x960 (9:16) -->
+        <canvas id="gameCanvas" width="540" height="960"></canvas>
+
         <div id="ui-overlay">
             <div id="score">SCORE: <span id="score-val">0</span></div>
             <div id="lives">LIVES: <span id="lives-val">5</span></div>
@@ -18,17 +22,7 @@
         </div>
     </div>
 
-    <!-- Virtual Controls for Mobile -->
-    <div id="virtual-controls">
-        <div class="d-pad">
-            <button id="btn-left" class="btn-control">◀</button>
-            <button id="btn-right" class="btn-control">▶</button>
-        </div>
-        <div class="action-pad">
-            <button id="btn-a" class="btn-control btn-action">A</button>
-        </div>
-    </div>
-
     <script type="module" src="js/main.js"></script>
 </body>
+
 </html>
