@@ -24,17 +24,6 @@ Gravity Well: 部分關卡具備引力場，會偏移球路。
 Combo System: 連續擊碎磚塊得分加倍。
 Haptic Feedback: 碰撞時提供手機震動回饋。
 
-## 📂 檔案結構建議
-
-Plaintext
-
-├── index.html       # 遊戲主入口與手機適配 Viewport
-├── style.css        # 8-bit 字體與 SNES 復古濾鏡樣式
-├── game.js          # 核心邏輯 (Phaser 3 或 Canvas API)
-└── assets/          # 資源目錄
-    ├── sounds/      # 8-bit 音效 (跳躍、爆炸、GameOver)
-    └── sprites/     # 像素貼圖 (板子、球、磚塊)
-
 ## ⚠️ 開發注意事項 (Dev Tips)
 速度封頂： 腳本內必須設定 MAX_SPEED，建議為初始速度的 2.5 倍，否則手機螢幕更新率將跟不上球速。
 碰撞邊界： 確保板子移動不會超出螢幕邊緣，且在不同解析度（iPhone/Android）下均能等比例縮放。
