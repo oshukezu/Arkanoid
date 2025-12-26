@@ -55,19 +55,37 @@ export class Ball {
         this.paddle = paddle;
 
         this.size = 12; // Larger ball for mobile
+        this.initialSpeed = 8; // Faster base speed for vertical gameplay
+        this.maxBallSpeed = this.initialSpeed * 2.5;
 
         this.reset();
     }
 
     reset() {
-        this.speed = { x: 0, y: 0 };
-        this.position = { x: 0, y: 0 };
-        this.sticky = true;
-        this.initialSpeed = 8; // Faster base speed for vertical gameplay
-        this.maxBallSpeed = this.initialSpeed * 2.5;
-
+        this.position = { x: this.gameWidth / 2, y: this.gameHeight / 2 };
+        this.speed = { x: 0, y: 0 }; // Start stuck
+        this.stuck = true;
+        this.stuckOffset = 0; // Relative to paddle center
         // Initial position relative to paddle
         this.updateStickyPosition();
+    }
+
+    split() {
+        // Return a new ball instance with slightly different angle
+        const newBall = new Ball(this.gameWidth, this.gameHeight, this.paddle);
+        newBall.position = { ...this.position };
+        newBall.stuck = false;
+
+        // Diverge speed
+        const speedMag = Math.sqrt(this.speed.x ** 2 + this.speed.y ** 2);
+        // Perturb angle
+        const angle = Math.atan2(this.speed.y, this.speed.x) + (Math.random() * 0.5 - 0.25);
+
+        newBall.speed = {
+            x: Math.cos(angle) * speedMag,
+            y: Math.sin(angle) * speedMag
+        };
+        return newBall;
     }
 
     updateStickyPosition() {
@@ -176,23 +194,34 @@ export class Brick {
 
     draw(ctx) {
         if (this.status === 1) {
-            ctx.fillStyle = this.color;
+            let color;
+            switch (this.type) {
+                case 1: color = '#e91e63'; break; // Pink for normal
+                case 2: color = '#bdbdbd'; break; // Silver for Hard
+                case 3: color = '#ffd700'; break; // Gold for Item
+                case 4: color = '#f44336'; break; // Red (Slow)
+                case 5: color = '#ffeb3b'; break; // Yellow (Fast) - Brighter than gold
+                case 6: color = '#2196f3'; break; // Blue (Split)
+                default: color = '#fff';
+            }
+
+            // If random normal color needed, we can stick to one or hash position
+            if (this.type === 1) {
+                // Simple rainbow rows effect based on Y position?
+                const hue = (this.y / 5) % 360;
+                color = `hsl(${hue}, 70%, 50%)`;
+            }
+
+            ctx.fillStyle = color;
             ctx.fillRect(this.x, this.y, this.width, this.height);
 
-            // Bevel
+            // Bevel effect
             ctx.fillStyle = 'rgba(255,255,255,0.3)';
-            ctx.fillRect(this.x, this.y, this.width, 4);
-            ctx.fillRect(this.x, this.y, 4, this.height);
-
+            ctx.fillRect(this.x, this.y, this.width, 2);
+            ctx.fillRect(this.x, this.y, 2, this.height);
             ctx.fillStyle = 'rgba(0,0,0,0.3)';
-            ctx.fillRect(this.x, this.y + this.height - 4, this.width, 4);
-            ctx.fillRect(this.x + this.width - 4, this.y, 4, this.height);
-
-            if (this.type === 2 && this.hp === 2) {
-                // Hard visual indicator
-                ctx.fillStyle = '#aaa';
-                ctx.fillRect(this.x + 10, this.y + 6, this.width - 20, 4);
-            }
+            ctx.fillRect(this.x + this.width - 2, this.y, 2, this.height);
+            ctx.fillRect(this.x, this.y + this.height - 2, this.width, 2);
         }
     }
 }

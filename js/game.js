@@ -4,18 +4,20 @@ import { generateLevel } from './levels.js';
 import { SoundManager } from './audio.js';
 
 export default class Game {
-    constructor(canvas) {
+    constructor(canvas, width, height) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
-        // Use internal resolution
-        this.gameWidth = 540;
-        this.gameHeight = 960;
-
-        // Scale canvas CSS if needed via style (handled by CSS, but internal logic stays 540x960)
+        this.gameWidth = width;
+        this.gameHeight = height;
 
         this.gameState = 'MENU';
         this.paddle = new Paddle(this.gameWidth, this.gameHeight);
-        this.ball = new Ball(this.gameWidth, this.gameHeight, this.paddle);
+
+        // Multiball support
+        this.balls = [];
+        // Initial ball (will be reset in start)
+        this.balls.push(new Ball(this.gameWidth, this.gameHeight, this.paddle));
+
         this.input = new InputHandler();
         this.audio = new SoundManager();
 
@@ -23,22 +25,50 @@ export default class Game {
         this.currentLevel = 0;
         this.lives = 5;
         this.score = 0;
+        this.lastScoreLifeBonus = 0; // Track score for extra life
 
         this.updateUI();
 
-        // Resume audio context on first click if needed
         document.addEventListener('click', () => {
             if (this.audio.ctx.state === 'suspended') {
                 this.audio.ctx.resume();
             }
-        }, { once: true });
+            // Click to restart on Game Over
+            if (this.gameState === 'GAMEOVER') {
+                this.restartGame();
+            }
+        });
+    }
+
+    resize(w, h) {
+        this.gameWidth = w;
+        this.gameHeight = h;
+        this.paddle.gameWidth = w;
+        this.paddle.gameHeight = h;
+        this.paddle.y = h - 30; // Keep paddle at bottom
+
+        // Balls need update if they go out of bounds? 
+        // Just let them be, wall collision will catch them next frame.
+        this.balls.forEach(b => {
+            b.gameWidth = w;
+            b.gameHeight = h;
+        });
+
+        // Re-layout bricks if necessary? 
+        // Ideally we should regenerate level or scale positions. 
+        // For simplicity, let's just clear and reload current level if resizing drastically?
+        // Or just let them float. "Full width" usually implies responsive layout.
+        // Let's reload the level to fit new width properly.
+        if (this.gameState === 'PLAYING') {
+            this.loadLevel(this.currentLevel);
+        }
     }
 
     start() {
-        // Initialize game resources but wait in MENU
-        this.currentLevel = 1; // Start at 1
+        this.currentLevel = 1;
         this.score = 0;
         this.lives = 5;
+        this.lastScoreLifeBonus = 0;
         this.loadLevel(this.currentLevel);
 
         this.gameState = 'MENU';
@@ -50,8 +80,9 @@ export default class Game {
         this.currentLevel = 1;
         this.score = 0;
         this.lives = 5;
+        this.lastScoreLifeBonus = 0;
         this.loadLevel(1);
-        this.gameState = 'MENU'; // User request: "Game over的時候應該回到初始畫面"
+        this.gameState = 'MENU';
         this.updateUI();
     }
 
@@ -65,18 +96,32 @@ export default class Game {
         if (this.gameState === 'MENU') {
             if (this.input.keys.action) {
                 this.gameState = 'PLAYING';
-                this.audio.play('win'); // Start sound
+                this.audio.play('win');
             }
         } else if (this.gameState === 'PLAYING') {
             this.paddle.update(this.input);
-            this.ball.update(this.input);
+
+            // Update all balls
+            this.balls.forEach(ball => ball.update(this.input));
+
+            // Remove balls that fell out
+            this.balls = this.balls.filter(ball => ball.position.y <= this.gameHeight);
+
             this.checkCollisions();
             this.checkGameOver();
             this.checkLevelComplete();
-        } else if (this.gameState === 'GAMEOVER') {
-            if (this.input.keys.action) {
-                this.restartGame();
-            }
+            this.checkScoreBonus();
+        }
+        // Game Over logic moved to click handler and visual draw
+    }
+
+    checkScoreBonus() {
+        // 10000 points = +1 Life
+        if (Math.floor(this.score / 10000) > this.lastScoreLifeBonus) {
+            this.lives++;
+            this.lastScoreLifeBonus++;
+            this.audio.play('win'); // Re-use win sound for 1up
+            this.updateUI();
         }
     }
 
@@ -85,16 +130,16 @@ export default class Game {
         this.bricks = [];
 
         const rows = levelData.length;
-        const cols = levelData[0].length; // Should be 8
+        const cols = levelData[0].length;
         const padding = 4;
         const offsetTop = 150;
 
-        // 540 width. 8 cols. 
-        // 540 - (padding * 9) / 8? 
-        // Let's fix brick width: (540 - 20 padding total) / 8 = 65
-        const brickWidth = 64;
+        // Calculate dynamic brick width based on screen width
+        const totalPadding = (cols + 1) * padding;
+        const availableWidth = this.gameWidth - totalPadding;
+        const brickWidth = Math.floor(availableWidth / cols);
         const brickHeight = 24;
-        const offsetLeft = (this.gameWidth - (cols * (brickWidth + padding))) / 2 + padding / 2;
+        const offsetLeft = padding;
 
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
@@ -107,69 +152,110 @@ export default class Game {
             }
         }
 
-        this.ball.reset();
+        // Reset balls
+        this.balls = [new Ball(this.gameWidth, this.gameHeight, this.paddle)];
+        this.balls[0].reset();
         this.updateUI();
     }
 
     checkCollisions() {
-        // Paddle
-        if (this.detectCollision(this.ball, this.paddle)) {
-            let collidePoint = this.ball.position.x - (this.paddle.x + this.paddle.width / 2);
-            collidePoint = collidePoint / (this.paddle.width / 2);
-            let angle = collidePoint * (Math.PI / 3);
-            let speed = Math.sqrt(this.ball.speed.x ** 2 + this.ball.speed.y ** 2);
-            speed = speed * 1.01;
+        this.balls.forEach(ball => {
+            // Paddle
+            if (this.detectCollision(ball, this.paddle)) {
+                let collidePoint = ball.position.x - (this.paddle.x + this.paddle.width / 2);
+                collidePoint = collidePoint / (this.paddle.width / 2);
+                let angle = collidePoint * (Math.PI / 3);
+                let speed = Math.sqrt(ball.speed.x ** 2 + ball.speed.y ** 2);
+                speed = speed * 1.01;
 
-            this.ball.speed.x = speed * Math.sin(angle);
-            this.ball.speed.y = -speed * Math.cos(angle);
-            this.audio.play('hit');
-        }
+                ball.speed.x = speed * Math.sin(angle);
+                ball.speed.y = -speed * Math.cos(angle);
+                this.audio.play('hit');
+            }
 
-        // Floor Check (handled in checkGameOver) but wall bounce should play sound? 
-        // Ball class handles bounce. Let's make ball return a status or check here?
-        // Basic wall bounce sound manually:
-        if (this.ball.position.y <= 0) {
-            this.audio.play('wall');
-        }
-
-        // Bricks
-        for (let i = 0; i < this.bricks.length; i++) {
-            let b = this.bricks[i];
-            if (b.status === 1) {
-                if (this.detectCollision(this.ball, b)) {
-                    this.ball.speed.y = -this.ball.speed.y;
-
-                    const destroyed = b.hit();
-                    if (destroyed) {
-                        this.audio.play('brick');
-                        if (b.type === 3) {
-                            this.score += 500; // Item bonus
-                            this.audio.play('item');
-                            // Simple effect: Expand paddle briefly?
-                            // Implementing item drop is complex. 
-                            // For "random item", maybe instant effect + text?
-                        } else {
-                            this.score += 100 * b.type;
-                            // Hard brick destroy sound
-                        }
-                    } else {
-                        // Hard brick hit but not destroyed
-                        this.score += 50;
-                        this.audio.play('hit');
-                    }
-
-                    // Speed up
-                    this.ball.speed.x *= 1.01;
-                    this.ball.speed.y *= 1.01;
-
-                    this.updateUI();
+            // Wall Sound
+            if (ball.position.x <= 0 || ball.position.x + ball.size >= this.gameWidth) {
+                // Ball handles bounce, we just play sound? 
+                // Actually ball update handles position limits. 
+                // We can check if it just reversed velocity?
+                // Simple check:
+                if (ball.position.x <= 1 || ball.position.x + ball.size >= this.gameWidth - 1) {
+                    this.audio.play('wall');
                 }
             }
+            if (ball.position.y <= 0) {
+                this.audio.play('wall');
+            }
+
+            // Bricks
+            for (let i = 0; i < this.bricks.length; i++) {
+                let b = this.bricks[i];
+                if (b.status === 1) {
+                    if (this.detectCollision(ball, b)) {
+                        ball.speed.y = -ball.speed.y;
+
+                        const destroyed = b.hit();
+                        if (destroyed) {
+                            this.audio.play('brick');
+                            this.applyBrickEffect(b, ball);
+                        } else {
+                            this.score += 50;
+                            this.audio.play('hit');
+                        }
+
+                        // Speed up slightly on every hit
+                        ball.speed.x *= 1.01;
+                        ball.speed.y *= 1.01;
+
+                        this.updateUI();
+                    }
+                }
+            }
+        });
+    }
+
+    applyBrickEffect(brick, ball) {
+        // Basic Score
+        this.score += 100 * brick.type;
+
+        // Special Colors (IDs from generateLevel)
+        // Let's assume: 40=Red(Slow), 50=Yellow(Fast), 60=Blue(Split) based on planned logic
+        // But generateLevel produces 1,2,3... need to map properly.
+        // For now, let's hook into the type directly if we updated generateLevel, 
+        // or just use arbitrary types for now.
+        // Current types: 1=Color, 2=Hard, 3=Item(Gold)
+
+        if (brick.type === 3) { // Items
+            this.score += 500;
+            this.audio.play('item');
+        }
+
+        // We will define these types in levels.js next step. 
+        // 4: Red (Slow)
+        // 5: Yellow (Fast)
+        // 6: Blue (Split)
+
+        const speedMag = Math.sqrt(ball.speed.x ** 2 + ball.speed.y ** 2);
+
+        if (brick.type === 4) { // RED - Slow
+            const factor = 0.7;
+            ball.speed.x *= factor;
+            ball.speed.y *= factor;
+            this.audio.play('item'); // Reuse sound or new one
+        }
+        else if (brick.type === 5) { // YELLOW - Fast
+            const factor = 1.3;
+            ball.speed.x *= factor;
+            ball.speed.y *= factor;
+            this.audio.play('item');
+        }
+        else if (brick.type === 6) { // BLUE - Split
+            this.balls.push(ball.split());
+            this.audio.play('item');
         }
     }
 
     detectCollision(ball, object) {
-        // AABB Collision (simplified for ball box)
         let ballLeft = ball.position.x;
         let ballRight = ball.position.x + ball.size;
         let ballTop = ball.position.y;
@@ -187,12 +273,16 @@ export default class Game {
     }
 
     checkGameOver() {
-        if (this.ball.position.y > this.gameHeight) {
+        // Only game over if NO balls left
+        if (this.balls.length === 0) {
             this.lives--;
             this.updateUI();
-            this.audio.play('die'); // Sound
+            this.audio.play('die');
+
             if (this.lives > 0) {
-                this.ball.reset();
+                // Respawn one ball
+                this.balls = [new Ball(this.gameWidth, this.gameHeight, this.paddle)];
+                this.balls[0].reset();
             } else {
                 this.gameState = 'GAMEOVER';
             }
@@ -200,12 +290,12 @@ export default class Game {
     }
 
     checkLevelComplete() {
-        // Check if all bricks (except unbreakable if any, but we don't have them yet) are gone
-        const activeBricks = this.bricks.filter(b => b.status === 1);
+        // Check if all destructible bricks are gone
+        const activeBricks = this.bricks.filter(b => b.status === 1 && b.type !== 999); // 999 for unbreakable if added
         if (activeBricks.length === 0) {
             this.currentLevel++;
             this.loadLevel(this.currentLevel);
-            this.audio.play('win'); // Level up sound
+            this.audio.play('win');
         }
     }
 
@@ -219,16 +309,13 @@ export default class Game {
     }
 
     draw() {
-        // Background
         this.ctx.fillStyle = '#000';
         this.ctx.fillRect(0, 0, this.gameWidth, this.gameHeight);
 
-        // Entities
         this.paddle.draw(this.ctx);
-        this.ball.draw(this.ctx); // Draw ball even in menu? maybe
+        this.balls.forEach(ball => ball.draw(this.ctx));
         this.bricks.forEach(brick => brick.draw(this.ctx));
 
-        // Overlays
         this.ctx.textAlign = 'center';
 
         if (this.gameState === 'MENU') {
@@ -242,7 +329,6 @@ export default class Game {
             this.ctx.fillText("OSHUKEZU VIBE CODING", this.gameWidth / 2, this.gameHeight / 2);
 
             this.ctx.font = '14px "Press Start 2P"';
-            // Pulsate text effect
             const alpha = Math.abs(Math.sin(Date.now() / 500));
             this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
             this.ctx.fillText("TAP 'A' BUTTON TO START", this.gameWidth / 2, this.gameHeight / 2 + 60);
@@ -260,7 +346,7 @@ export default class Game {
 
             const alpha = Math.abs(Math.sin(Date.now() / 500));
             this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-            this.ctx.fillText("PRESS A TO RESTART", this.gameWidth / 2, this.gameHeight / 2 + 80);
+            this.ctx.fillText("TAP SCREEN TO RESTART", this.gameWidth / 2, this.gameHeight / 2 + 80);
         }
     }
 }

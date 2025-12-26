@@ -1,31 +1,33 @@
 export function generateLevel(levelNumber) {
     // 5 initial rows, adding 1 row every 5 levels
-    const rows = 5 + Math.floor(levelNumber / 5);
-    const cols = 8; // Fits nicely in 540 width (540 / 8 = 67.5px or so)
-    const levelData = [];
+    export function generateLevel(levelNum) {
+        const rows = 8 + Math.floor(levelNum / 5); // Increase rows slowly
+        const cols = 8;
+        const levelMap = [];
 
-    for (let i = 0; i < rows; i++) {
-        levelData[i] = [];
-        for (let j = 0; j < cols; j++) {
-            // 隨機生成磚塊類型：0=空, 1=普通, 2=硬磚(需打兩次), 3=道具磚
-            // Logic: 30% chance to be empty.
-            // If not empty (70%), 20% chance to be special (item), otherwise normal?
-            // User requested: Math.random() > 0.3 ? (Math.random() > 0.8 ? 3 : 1) : 0;
-            // Let's integrate Hard Brick (2) as well.
-
-            if (Math.random() > 0.3) {
-                const randType = Math.random();
-                if (randType > 0.9) {
-                    levelData[i][j] = 3; // Item
-                } else if (randType > 0.8) {
-                    levelData[i][j] = 2; // Hard
+        for (let r = 0; r < rows; r++) {
+            let row = [];
+            for (let c = 0; c < cols; c++) {
+                // Chance for empty space
+                if (Math.random() < 0.1) {
+                    row.push(0);
                 } else {
-                    levelData[i][j] = 1; // Normal
+                    // Determine brick type
+                    const rand = Math.random();
+                    if (rand < 0.05) {
+                        row.push(2); // Hard brick (Silver)
+                    } else if (rand < 0.1) {
+                        row.push(3); // Gold Item (Score)
+                    } else if (rand < 0.15) {
+                        row.push(4); // RED (Slow)
+                    } else if (rand < 0.20) {
+                        row.push(5); // YELLOW (Fast)
+                    } else if (rand < 0.25) {
+                        row.push(1); // Normal Colored
+                    }
                 }
-            } else {
-                levelData[i][j] = 0; // Empty
             }
+            levelMap.push(row);
         }
+        return levelMap;
     }
-    return levelData;
-}
