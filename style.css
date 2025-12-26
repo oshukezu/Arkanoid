@@ -92,25 +92,33 @@ canvas {
     flex: 1;
 }
 
-/* Big Buttons */
+/* Button Styling */
 .big-btn {
-    width: 90%;
-    height: 80%;
-    border: 4px solid #fff;
-    border-radius: 12px;
+    width: 80px;
+    /* Reduced from 90% flexibility to fixed manageable size */
+    height: 80px;
+    /* Square aspect close to 50% reduction visually if they were huge */
+    max-width: 90%;
+    /* Prevent overflow on very small screens */
+    max-height: 90%;
+    border: 3px solid #fff;
+    border-radius: 10px;
     background-color: var(--btn-color);
     color: #fff;
     font-family: inherit;
-    font-size: 32px;
-    /* Large Icon */
-    box-shadow: 0 6px 0 #000;
-    active: translate(0, 6px);
+    font-size: 24px;
+    /* Reduced from 32px */
+    box-shadow: 0 4px 0 #000;
+    active: translate(0, 4px);
     transition: transform 0.05s, box-shadow 0.05s;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .big-btn:active {
-    transform: translateY(6px);
+    transform: translateY(4px);
     box-shadow: 0 0 0 #000;
     background-color: var(--btn-active);
 }
@@ -118,12 +126,9 @@ canvas {
 .action-btn {
     background-color: var(--action-color);
     border-radius: 50%;
-    /* Circle for A button */
-    width: auto;
-    aspect-ratio: 1;
-    /* Keep circle */
-    height: 90%;
-    font-size: 40px;
+    width: 90px;
+    height: 90px;
+    font-size: 28px;
 }
 
 .action-btn:active {
